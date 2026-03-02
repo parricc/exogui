@@ -180,8 +180,30 @@ async function initialize(message: any, _: any): Promise<void> {
     try {
         switch (process.platform) {
             case "win32": {
-                state.vlcPlayer = new VlcPlayer(path.join(state.config.exodosPath, "ThirdParty", "VLC", "x64", "vlc.exe"), [],
-                    state.config.vlcPort, state.preferences.gameMusicVolume);
+                state.vlcPlayer = new VlcPlayer(
+                    path.join(state.config.exodosPath, "ThirdParty", "VLC", "x64", "vlc.exe"),
+                    [],
+                    state.config.vlcPort,
+                    state.preferences.gameMusicVolume,
+                );
+                break;
+            }
+            case "linux": {
+                state.vlcPlayer = new VlcPlayer(
+                    "flatpak",
+                    ["run", "com.retro_exo.vlc"],
+                    state.config.vlcPort,
+                    state.preferences.gameMusicVolume,
+                );
+                break;
+            }
+            case "darwin": {
+                state.vlcPlayer = new VlcPlayer(
+                    "/Applications/VLC.app/Contents/MacOS/VLC",
+                    [],
+                    state.config.vlcPort,
+                    state.preferences.gameMusicVolume,
+                );
                 break;
             }
             default: {
@@ -189,6 +211,9 @@ async function initialize(message: any, _: any): Promise<void> {
                 break;
             }
         }
+        state.vlcPlayer?.server?.once("error", () => {
+            state.vlcPlayer = undefined;
+        });
     } catch (err) {
         log({
             source: "VLC",
@@ -279,6 +304,8 @@ export function exit() {
                     resolve();
                 })
             ),
+            // Quit VLC player
+            state.vlcPlayer?.quit(),
         ]).then(() => {
             process.exit();
         });

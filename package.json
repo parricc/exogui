@@ -11,7 +11,7 @@
         "installed": false
     },
     "scripts": {
-        "start": "npx electron ./build/main/index.js",
+        "start": "npx electron ./build/main/index.js --no-sandbox",
         "dev": "npx concurrently --kill-others \"npx gulp watch\" \"npx nodemon\"",
         "build": "npx gulp build",
         "watch": "npx gulp watch",

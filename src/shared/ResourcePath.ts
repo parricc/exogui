@@ -39,5 +39,9 @@ export function getResourcesPath(app: ElectronApp, isDev: boolean): string {
     }
 
     // Windows and Linux tar.gz: resources are in the app directory
+    // Use win32.dirname on Windows so cross-platform tests (running on Linux) handle backslash separators correctly
+    if (process.platform === "win32") {
+        return path.win32.dirname(app.getPath("exe"));
+    }
     return path.dirname(app.getPath("exe"));
 }

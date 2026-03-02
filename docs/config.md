@@ -218,7 +218,7 @@ exogui uses dynamic port allocation within specified ranges. The backend tries p
 -   **Description:** Port number for VLC media player HTTP interface
 -   **Valid range:** `1024` - `65535`
 -   **Notes:**
-    -   Used to control VLC for game music playback (Windows only)
+    -   Used to control VLC for game music playback (Windows, Linux, macOS)
     -   Must not conflict with other ports used by exogui or system services
     -   Changing this requires an application restart
 
