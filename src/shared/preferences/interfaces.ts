@@ -44,6 +44,8 @@ export type IAppPreferencesData = {
     browsePageSearchInstalled: boolean | null;
     /** Persisted recommended filter (null = no filter). */
     browsePageSearchRecommended: boolean | null;
+    /** Whether the filter panel is expanded in the browse page */
+    browsePageFiltersExpanded: boolean;
 };
 
 export type IAppPreferencesDataMainWindow = {

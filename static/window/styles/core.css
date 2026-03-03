@@ -85,6 +85,28 @@ body {
 .simple-button--active {
   box-shadow: 0 0 0 2px currentColor;
 }
+.tri-state-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+}
+.tri-state-icon-button--inactive {
+  opacity: 0.4;
+}
+.tri-state-icon-button__indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+.tri-state-icon-button__indicator--check {
+  color: #4caf50;
+}
+.tri-state-icon-button__indicator--cross {
+  color: #f44336;
+}
 /* Simple Selector */
 .simple-selector {
   margin-right: 0.5em;
@@ -2699,7 +2721,11 @@ body {
 
 .search-bar-text-input {
   flex-grow: 1;
-  font-size: medium;
+  font-size: 0.9em;
+}
+
+.search-bar .simple-selector {
+  font-size: 0.9em;
 }
 
 .search-bar-expansion {

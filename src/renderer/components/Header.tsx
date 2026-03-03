@@ -80,6 +80,15 @@ export function Header(props: HeaderProps) {
                 navigate(Paths.ABOUT);
             },
         },
+        {
+            type: "separator",
+        },
+        {
+            label: "Quit",
+            click() {
+                window.External.back.send(BackIn.QUIT);
+            },
+        },
     ];
 
     return (

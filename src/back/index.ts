@@ -180,7 +180,7 @@ async function initialize(message: any, _: any): Promise<void> {
     try {
         switch (process.platform) {
             case "win32": {
-                state.vlcPlayer = new VlcPlayer(
+                state.vlcPlayer = await VlcPlayer.create(
                     path.join(state.config.exodosPath, "ThirdParty", "VLC", "x64", "vlc.exe"),
                     ["--no-video"],
                     state.config.vlcPort,
@@ -189,7 +189,7 @@ async function initialize(message: any, _: any): Promise<void> {
                 break;
             }
             case "linux": {
-                state.vlcPlayer = new VlcPlayer(
+                state.vlcPlayer = await VlcPlayer.create(
                     "flatpak",
                     ["run", "com.retro_exo.vlc", "--no-video"],
                     state.config.vlcPort,
@@ -198,7 +198,7 @@ async function initialize(message: any, _: any): Promise<void> {
                 break;
             }
             case "darwin": {
-                state.vlcPlayer = new VlcPlayer(
+                state.vlcPlayer = await VlcPlayer.create(
                     "/Applications/VLC.app/Contents/MacOS/VLC",
                     ["--no-video"],
                     state.config.vlcPort,
@@ -211,9 +211,6 @@ async function initialize(message: any, _: any): Promise<void> {
                 break;
             }
         }
-        state.vlcPlayer?.server?.once("error", () => {
-            state.vlcPlayer = undefined;
-        });
     } catch (err) {
         log({
             source: "VLC",

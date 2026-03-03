@@ -7,8 +7,9 @@ import {
 } from "@renderer/redux/searchSlice";
 import { RootState } from "@renderer/redux/store";
 import { updatePreferencesData } from "@shared/preferences/util";
-import { faFilter, faFilterCircleXmark } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCirclePlay, faFilter, faFilterCircleXmark, faStar, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { GameOrderBy, GameOrderReverse } from "@shared/order/interfaces";
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,7 +29,15 @@ export type SearchBarProps = {
 export function SearchBar(props: SearchBarProps) {
     const { searchState } = useSelector((state: RootState) => state);
     const dispatch = useDispatch();
-    const [expanded, setExpanded] = React.useState(true);
+    const [expanded, setExpanded] = React.useState(
+        window.External.preferences.data.browsePageFiltersExpanded
+    );
+
+    const onToggleExpanded = () => {
+        const next = !expanded;
+        setExpanded(next);
+        updatePreferencesData({ browsePageFiltersExpanded: next });
+    };
     const view = searchState.views[props.view];
 
     const onTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,7 +204,7 @@ export function SearchBar(props: SearchBarProps) {
     const onToggleGenre = onToggleFactory("genre");
     const onClearGenre = onClearFactory("genre");
 
-    // Region
+    // Play Mode
     const playModeItems = React.useMemo(() => {
         const set = new Set(
             view.games.flatMap((g) =>
@@ -262,13 +271,15 @@ export function SearchBar(props: SearchBarProps) {
                     onChangeOrderBy={onChangeOrderBy}
                     onChangeOrderReverse={onChangeOrderReverse}
                 />
-                <TriStateButton
-                    label="Installed"
+                <TriStateIconButton
+                    icon={faCirclePlay}
+                    title="Installed"
                     value={view.advancedFilter.installed}
                     onChange={onInstalledChange}
                 />
-                <TriStateButton
-                    label="Recommended"
+                <TriStateIconButton
+                    icon={faStar}
+                    title="Recommended"
                     value={view.advancedFilter.recommended}
                     onChange={onRecommendedChange}
                 />
@@ -282,7 +293,7 @@ export function SearchBar(props: SearchBarProps) {
                 </button>
                 <button
                     className={`simple-button${expanded ? " simple-button--active" : ""}`}
-                    onClick={() => setExpanded(prev => !prev)}
+                    onClick={onToggleExpanded}
                     title={expanded ? "Hide filters" : "Show filters"}
                 >
                     <FontAwesomeIcon icon={faFilter} />
@@ -352,14 +363,14 @@ export function SearchBar(props: SearchBarProps) {
     );
 }
 
-
-type TriStateButtonProps = {
-    label: string;
+type TriStateIconButtonProps = {
     value?: boolean;
+    title: string;
+    icon: IconDefinition;
     onChange: (value?: boolean) => void;
 };
 
-function TriStateButton({ label, value, onChange }: TriStateButtonProps) {
+function TriStateIconButton({ value, title, icon, onChange }: TriStateIconButtonProps) {
     const handleClick = () => {
         if (value === true) {
             onChange(false);
@@ -370,17 +381,19 @@ function TriStateButton({ label, value, onChange }: TriStateButtonProps) {
         }
     };
 
-    const suffix = value === true ? ": ✓" : value === false ? ": ✗" : "";
-    const isActive = value !== undefined;
-
     return (
-        <input
-            type="button"
-            className={`simple-button${isActive ? " simple-button--active" : ""}`}
-            value={`${label}${suffix}`}
+        <button
+            className={`simple-button tri-state-icon-button${value === undefined ? " tri-state-icon-button--inactive" : ""}`}
             onClick={handleClick}
             onContextMenu={(e) => { e.preventDefault(); onChange(undefined); }}
-        />
+            title={title}
+        >
+            <FontAwesomeIcon icon={icon} />
+            <span className={`tri-state-icon-button__indicator${value === true ? " tri-state-icon-button__indicator--check" : value === false ? " tri-state-icon-button__indicator--cross" : ""}`}>
+                {value === true && <FontAwesomeIcon icon={faCheck} />}
+                {value === false && <FontAwesomeIcon icon={faXmark} />}
+            </span>
+        </button>
     );
 }
 
@@ -412,10 +425,8 @@ function SearchableSelect(props: SearchableSelectProps) {
     };
 
     React.useEffect(() => {
-        // Add event listener to handle clicks outside the dropdown
         document.addEventListener("mousedown", handleClickOutside);
 
-        // Cleanup the event listener on component unmount
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
@@ -466,7 +477,7 @@ function SearchableSelectDropdown(props: SearchableSelectDropdownProps) {
     const inputRef = React.useRef<HTMLInputElement>(null);
 
     const [search, setSearch] = React.useState("");
-    const [storedItems, setStoredItems] = React.useState(items); // 'cache' the items
+    const [storedItems, setStoredItems] = React.useState(items);
 
     const filteredItems = React.useMemo(() => {
         const lowerSearch = search.toLowerCase().replace(" ", "");
@@ -475,8 +486,6 @@ function SearchableSelectDropdown(props: SearchableSelectDropdownProps) {
         );
     }, [search, storedItems]);
 
-    // Update the stored items when all selections removed
-    // Too difficult to do this any other way
     React.useEffect(() => {
         if (selected.length === 0) {
             setStoredItems(items);
@@ -511,11 +520,9 @@ function SearchableSelectDropdown(props: SearchableSelectDropdownProps) {
         );
     };
 
-
     return (
         <div
             onClick={(event) => {
-                // Prevent bubble up
                 event.stopPropagation();
                 event.preventDefault();
                 return -1;

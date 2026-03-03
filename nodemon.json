@@ -1,7 +1,6 @@
 {
-  "watch": ["build/**/*"],
-  "ext": "js,html,css,json",
-  "ignore": [],
-  "exec": "electron ./build/main/index.js",
+  "watch": ["build/back", "build/main", "build/shared"],
+  "ext": "js",
+  "exec": "electron ./build/main/index.js --no-sandbox",
   "delay": 500
 }

@@ -10,28 +10,80 @@ export class VlcPlayer {
     private isProcessingQueue: boolean = false;
     private isSocketConnected: boolean = false;
     private loopEnabled: boolean = false;
+    private ownsProcess: boolean = false;
 
-    constructor(
+    private constructor(
         private vlcPath: string,
         private args: string[],
         private port: number,
         private initialVol: number,
-    ) {
-        const fullArgs = [...this.args, "-I", "rc", "--rc-host", `127.0.0.1:${port}`];
+    ) {}
+
+    static async create(vlcPath: string, args: string[], port: number, initialVol: number): Promise<VlcPlayer> {
+        const player = new VlcPlayer(vlcPath, args, port, initialVol);
+
+        const connected = await player.tryConnectExisting();
+        if (connected) {
+            console.log(`VLC: attached to existing instance on port ${port}`);
+            return player;
+        }
+
+        const fullArgs = [...args, "-I", "rc", "--rc-host", `127.0.0.1:${port}`];
         console.log(`VLC: starting process "${vlcPath}" with args: ${fullArgs.join(" ")}`);
-        this.server = spawn(this.vlcPath, fullArgs, { windowsHide: true });
-        this.server.stdout?.on("data", (d: Buffer) => console.log(`VLC stdout: ${d.toString().trimEnd()}`));
-        this.server.stderr?.on("data", (d: Buffer) => console.log(`VLC stderr: ${d.toString().trimEnd()}`));
-        this.server.on("spawn", () => {
-            console.log(`VLC: process spawned (pid ${this.server?.pid})`);
+        player.ownsProcess = true;
+        player.server = spawn(vlcPath, fullArgs, { windowsHide: true });
+        player.server.stdout?.on("data", (d: Buffer) => console.log(`VLC stdout: ${d.toString().trimEnd()}`));
+        player.server.stderr?.on("data", (d: Buffer) => console.log(`VLC stderr: ${d.toString().trimEnd()}`));
+        player.server.on("spawn", () => {
+            console.log(`VLC: process spawned (pid ${player.server?.pid})`);
         });
-        this.server.on("error", (err) => {
+        player.server.on("error", (err) => {
             console.log(`VLC: failed to start — ${err}`);
-            this.server = null;
+            player.server = null;
         });
-        this.server.on("exit", (code, signal) => {
+        player.server.on("exit", (code, signal) => {
             console.log(`VLC: process exited (code=${code}, signal=${signal})`);
         });
+
+        return player;
+    }
+
+    private tryConnectExisting(): Promise<boolean> {
+        return new Promise((resolve) => {
+            const socket = net.connect(this.port, "127.0.0.1");
+
+            const timeout = setTimeout(() => {
+                socket.destroy();
+                resolve(false);
+            }, 1000);
+
+            socket.on("connect", () => {
+                clearTimeout(timeout);
+                this.attachSocket(socket);
+                resolve(true);
+            });
+
+            socket.on("error", () => {
+                clearTimeout(timeout);
+                resolve(false);
+            });
+        });
+    }
+
+    private attachSocket(socket: net.Socket): void {
+        this.socket = socket;
+        this.isSocketConnected = true;
+        socket.on("data", (d: Buffer) => console.log(`VLC rc: ${d.toString().trimEnd()}`));
+        socket.on("error", (err) => {
+            console.log(`VLC: RC socket error — ${err}`);
+            this.isSocketConnected = false;
+        });
+        socket.on("close", () => {
+            console.log("VLC: RC socket closed");
+            this.isSocketConnected = false;
+        });
+        const vlcVol = Math.floor(Math.max(0, Math.min(1, this.initialVol)) * 256);
+        socket.write(`volume ${vlcVol}\nrepeat ${this.loopEnabled ? "on" : "off"}\n`);
     }
 
     private async connectSocket(): Promise<void> {
@@ -44,25 +96,15 @@ export class VlcPlayer {
 
         console.log(`VLC: connecting to RC socket on port ${this.port}`);
         return new Promise((resolve, reject) => {
-            this.socket = net.connect(this.port, "127.0.0.1", () => {
+            const socket = net.connect(this.port, "127.0.0.1", () => {
                 console.log("VLC: RC socket connected");
-                this.isSocketConnected = true;
-                const vlcVol = Math.floor(Math.max(0, Math.min(1, this.initialVol)) * 256);
-                this.socket!.write(`volume ${vlcVol}\nrepeat ${this.loopEnabled ? "on" : "off"}\n`);
+                this.attachSocket(socket);
                 resolve();
             });
 
-            this.socket.on("data", (d: Buffer) => console.log(`VLC rc: ${d.toString().trimEnd()}`));
-
-            this.socket.on("error", (err) => {
+            socket.on("error", (err) => {
                 console.log(`VLC: RC socket error — ${err}`);
-                this.isSocketConnected = false;
                 reject(err);
-            });
-
-            this.socket.on("close", () => {
-                console.log("VLC: RC socket closed");
-                this.isSocketConnected = false;
             });
         });
     }
@@ -165,7 +207,7 @@ export class VlcPlayer {
 
     async quit(): Promise<void> {
         console.log("VLC: quitting");
-        if (this.socket && this.isSocketConnected) {
+        if (this.ownsProcess && this.socket && this.isSocketConnected) {
             this.socket.write("shutdown\n");
         }
         await this.close();

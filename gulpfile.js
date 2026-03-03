@@ -25,8 +25,13 @@ const config = {
 
 /* ------ Watch ------ */
 
+gulp.task("build-back-dev", (done) => {
+    execute("npx swc --strip-leading-paths --no-swcrc --config-file swcrc.back.dev.json --source-maps true -d build src", done);
+});
+
 gulp.task("watch-back", (done) => {
-    execute("npx swc --strip-leading-paths --no-swcrc --config-file swcrc.back.dev.json --source-maps true -d build src --watch", done);
+    gulp.watch("src/**/*.{ts,tsx}", gulp.task("build-back-dev"));
+    done();
 });
 
 gulp.task("watch-renderer", async (done) => {

@@ -59,6 +59,7 @@ export const defaultPreferencesData: Readonly<IAppPreferencesData> =
         browsePageSearchOrderReverse: "ascending",
         browsePageSearchInstalled: null,
         browsePageSearchRecommended: null,
+        browsePageFiltersExpanded: true,
     });
 
 /**
@@ -125,6 +126,7 @@ export function overwritePreferenceData(
     parser.prop("browsePageSearchOrderReverse", (v) => (source.browsePageSearchOrderReverse = strOpt(v, gameOrderReverseOptions, "ascending")), true);
     parser.prop("browsePageSearchInstalled", (v) => (source.browsePageSearchInstalled = v === null || v === undefined ? null : !!v), true);
     parser.prop("browsePageSearchRecommended", (v) => (source.browsePageSearchRecommended = v === null || v === undefined ? null : !!v), true);
+    parser.prop("browsePageFiltersExpanded", (v) => (source.browsePageFiltersExpanded = !!v), true);
     // Parse window object
     parseMainWindow(parser.prop("mainWindow"), source.mainWindow);
     parser

@@ -221,7 +221,7 @@ class BrowsePage extends React.Component<
                         if (this.props.gameLayout === BrowsePageLayout.grid) {
                             // (These are kind of "magic numbers" and the CSS styles are designed to fit with them)
                             const height: number = calcScale(
-                                350,
+                                298,
                                 this.props.gameScale
                             );
                             const width: number = (height * 0.7) | 0;
